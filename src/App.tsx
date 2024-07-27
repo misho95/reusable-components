@@ -1,11 +1,18 @@
 import { Button } from "./components/button";
 import Title from "./components/title";
 import Layout from "./components/layout";
+import {
+  Accordion,
+  AccordionContet,
+  AccordionItem,
+  AccordionTrigger,
+} from "./components/ui/accodrion";
+import AccordionExample from "./components/accordion-example";
 
 function App() {
   return (
     <Layout>
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-3 p-5">
         <Title title="variants">
           <Button>primary</Button>
           <Button variant="secondary">secondary</Button>
@@ -41,6 +48,7 @@ function App() {
           <Button radius="lg">large</Button>
         </Title>
       </div>
+      <AccordionExample />
     </Layout>
   );
 }
