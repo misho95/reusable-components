@@ -36,7 +36,7 @@ const AccordionExample = () => {
         <Accordion>
           {data.map((d) => {
             return (
-              <AccordionItem value={d.id} variant={d.variant as any}>
+              <AccordionItem key={d.id} value={d.id} variant={d.variant as any}>
                 <AccordionTrigger>
                   Lorem ipsum dolor sit amet consectetur adipisicing elit. Nulla
                   cum enim libero repudiandae atque necessitatibus sunt eum
@@ -63,7 +63,7 @@ const AccordionExample = () => {
         <Accordion type="single">
           {data.map((d) => {
             return (
-              <AccordionItem value={d.id} variant={d.variant as any}>
+              <AccordionItem key={d.id} value={d.id} variant={d.variant as any}>
                 <AccordionTrigger>
                   Lorem ipsum dolor sit amet consectetur adipisicing elit. Nulla
                   cum enim libero repudiandae atque necessitatibus sunt eum

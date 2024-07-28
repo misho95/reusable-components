@@ -1,5 +1,6 @@
 import {
   FC,
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -20,35 +21,42 @@ const VideoPlayer: FC<VideoProps> = ({
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [ref, { width }] = useMeasure();
+  const [thumbnail, setThumbnail] = useState(0);
+  const [hovering, setHovering] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const offscreenVideoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const offscreenVideoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const captureFrame = (time) => {
+  const captureFrame = (time: number) => {
+    if (!offscreenVideoRef.current || !canvasRef.current) return;
     const video = offscreenVideoRef.current;
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
+
+    if (!context) return;
 
     video.currentTime = time;
 
     video.onseeked = () => {
       // Draw the video frame onto the canvas
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataURL = canvas.toDataURL();
-      setThumbnail(dataURL);
-      video.onseeked = null; // Clear the event handler
     };
   };
 
   const handleHover = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (!videoRef.current) return;
+
     const offsetX = e.nativeEvent.offsetX;
     const percentage = (offsetX / width) * 100;
 
+    console.log("offsetX", offsetX);
+
     // Assuming video duration is available
     const newCurrentTime = (percentage / 100) * duration;
+    const newThumnailPosition = (width / 100) * percentage;
 
+    setThumbnail(newThumnailPosition);
     captureFrame(newCurrentTime);
   };
 
@@ -112,8 +120,31 @@ const VideoPlayer: FC<VideoProps> = ({
       videoRef.current?.removeEventListener("timeupdate", listenChange);
   }, []);
 
+  const extractPaddingClasses = (className: string) => {
+    if (!className) return;
+    return className
+      .split(" ")
+      .filter(
+        (cls) =>
+          cls.startsWith("p-") ||
+          cls.startsWith("pt-") ||
+          cls.startsWith("pr-") ||
+          cls.startsWith("pb-") ||
+          cls.startsWith("pl-") ||
+          cls.startsWith("px-") ||
+          cls.startsWith("py-")
+      )
+      .join(" ");
+  };
+
+  const paddingClasses = extractPaddingClasses(className as string);
+
+  useEffect(() => {
+    console.log(thumbnail);
+  }, [thumbnail]);
+
   return (
-    <div className="relative w-fit- h-fit">
+    <div className="relative flex justify-center items-center">
       <video ref={offscreenVideoRef} style={{ display: "none" }}>
         <source src={src} type="video/mp4" />
         Your browser does not support the video tag.
@@ -126,42 +157,65 @@ const VideoPlayer: FC<VideoProps> = ({
         className={cn("rounded-lg", className)}
       >
         <source src={src} type="video/mp4" />
+        Your browser does not support the video tag.
       </video>
       {controls && (
-        <div className="flex flex-col gap-5 absolute bottom-0 left-0 w-full p-3">
-          <canvas
-            ref={canvasRef}
-            width="1920"
-            height="1080"
-            className="w-[150px] h-[100px]"
-            style={{ border: "1px solid black" }}
-          />
-          <div
-            onMouseMove={handleHover}
-            onClick={handleProgress}
-            ref={ref}
-            className="w-full h-[5px] bg-slate-300"
-          >
+        <div className={`absolute bottom-0 left-0 w-full ${paddingClasses}`}>
+          <div className="flex flex-col gap-5 p-3">
             <div
-              className="bg-red-500 h-full"
-              style={{
-                width: `calc(${(progress / duration) * width}px)`,
-              }}
-            />
-          </div>
-          <div className="flex gap-1">
-            <Button onClick={handlePlay} size="sm">
-              {videoRef.current?.paused ? "play" : "pause"}
-            </Button>
-            <Button onClick={handleStop} size="sm">
-              Stop
-            </Button>
-            <Button onClick={() => handleChangeTime("back")} size="sm">
-              {"<<"}
-            </Button>
-            <Button onClick={() => handleChangeTime("front")} size="sm">
-              {">>"}
-            </Button>
+              onMouseOver={() => setHovering(true)}
+              onMouseLeave={() => setHovering(false)}
+              onMouseMove={handleHover}
+              onClick={handleProgress}
+              ref={ref}
+              className="w-full relative py-[4px] cursor-pointer"
+            >
+              <div className="w-full bg-slate-300 h-[6px]">
+                <div
+                  className="bg-red-500 h-full relative"
+                  style={{
+                    width: `calc(${(progress / duration) * width}px)`,
+                  }}
+                >
+                  {hovering && (
+                    <button
+                      onMouseMove={(e) => e.stopPropagation()}
+                      className="bg-red-500 size-[10px] rounded-full absolute top-1/2 -translate-y-1/2 -right-[5px]"
+                    />
+                  )}
+                </div>
+                {hovering && (
+                  <canvas
+                    ref={canvasRef}
+                    width="1920"
+                    height="1080"
+                    className="w-[150px] h-[100px] absolute bottom-[16px] duration-100"
+                    style={{
+                      left:
+                        thumbnail <= 150
+                          ? "0px"
+                          : thumbnail >= width - 150
+                          ? `${width - 150}px`
+                          : `calc(${thumbnail}px - 75px)`,
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+            <div className="flex gap-1">
+              <Button onClick={handlePlay} size="sm">
+                {videoRef.current?.paused ? "play" : "pause"}
+              </Button>
+              <Button onClick={handleStop} size="sm">
+                Stop
+              </Button>
+              <Button onClick={() => handleChangeTime("back")} size="sm">
+                {"<<"}
+              </Button>
+              <Button onClick={() => handleChangeTime("front")} size="sm">
+                {">>"}
+              </Button>
+            </div>
           </div>
         </div>
       )}
